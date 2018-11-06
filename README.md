@@ -54,6 +54,19 @@ For integration MangoH Red and Wave Share E-Ink Display
     Exit and save Bluetooth Linux config
     Rebuild kernel image: bitbake -f linux-yocto
  
- 7.
+ 7. Rebuild rootfs filesystem and images
+
+    bitbake -c cleansstate mdm9x15-image-minimal
+    bitbake mdm9x15-image-minimal
+
+Check new build CWE images: yocto_wp85.cwe
+
+    Go to images directory: cd build_bin/tmp/deploy/images/swi-mdm9x15
+
+Reflash new image with Bluetooth driver module support to the target board
+
+    FDT command: fdt yocto_wp85.cwe
+
+
 
 
