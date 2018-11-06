@@ -10,12 +10,12 @@ For integration MangoH Red and Wave Share E-Ink Display
 
     Run command: tar -xvjf Legato-Dist-Source-mdm9x15-SWI9X15Y_07.10.04.00.tar.bz2
 
-3. Disable Legato configuration to build Yocto
+### 3. Disable Legato configuration to build Yocto
 
     Run command: cd yocto
     Run command: export LEGATO_BUILD=0
 
-4. Build Yocto images from source
+### 4. Build Yocto images from source
 
     Run command: make image_bin
     If you get the error not found 'serf.h', then follow the steps below, otherwise skip to the next step.
@@ -24,11 +24,11 @@ For integration MangoH Red and Wave Share E-Ink Display
         Put attach file: subversion_1.8.9.bbappend, under directory subversion
         The full path would be: yocto/meta-swi/common/recipes-devtools/subversion/subversion_1.8.9.bbappend
         build Yocto images again: make image_bin
-5. Set environment under yocto directory, this will get command bitbake run:
+### 5. Set environment under yocto directory, this will get command bitbake run:
 
     Run Command: . ./poky/oe-init-build-env
     
-6. Build Linux kernel with Bluetooth driver modules support
+### 6. Build Linux kernel with Bluetooth driver modules support
 
     Go to directory: yocto/build_bin (cd …/build_bin)
     Configure kernel with default:
@@ -53,7 +53,7 @@ For integration MangoH Red and Wave Share E-Ink Display
     Exit and save Bluetooth Linux config
     Rebuild kernel image: bitbake -f linux-yocto
  
- 7. Rebuild rootfs filesystem and images
+ ### 7. Rebuild rootfs filesystem and images
 
     bitbake -c cleansstate mdm9x15-image-minimal
     bitbake mdm9x15-image-minimal
