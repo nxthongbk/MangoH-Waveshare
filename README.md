@@ -28,29 +28,29 @@ For integration MangoH Red and Wave Share E-Ink Display
 
     Run Command: . ./poky/oe-init-build-env
     
-### 6. Build Linux kernel with Bluetooth driver modules support
+### 6. Build Linux kernel with Buffer Frame driver modules support
 
     Go to directory: yocto/build_bin (cd …/build_bin)
     Configure kernel with default:
         Run command: bitbake linux-yocto -c kernel_configme -f
     Configure kernel to add BT driver module in Linux configuration
         Run command: bitbake linux-yocto -c menuconfig
-        Enter Networking Support
-        Enter <M> Bluetooth subsystem support
-            <M> RFCOMM protocol support
+        Enter Device Driver -> Graphic Support
+        Enter <M> Suport for frameBuffer devices
+            <!-- <M> RFCOMM protocol support
             [*] RFCOMM TTY support
             <M> BNEP protocol support
             [*] Multicast filter support
             [*] Protocol filter support
-            <M> HIDP protocol support
-        Enter Bluetooth device drivers
+            <M> HIDP protocol support --!>
+        Enter Frame buffer hardware devices
             <M> HCI UART driver
             [*] UART(H4) protocol support
             [*] BCSP protocol support
             [*] Atheros AR300x serial support
             [*] HCILL protocol support
             [*] Threewire UART(HS) protocol support
-    Exit and save Bluetooth Linux config
+    Exit and save Frame Buffer Linux config
     Rebuild kernel image: bitbake -f linux-yocto
  
  ### 7. Rebuild rootfs filesystem and images
@@ -62,7 +62,7 @@ Check new build CWE images: yocto_wp85.cwe
 
     Go to images directory: cd build_bin/tmp/deploy/images/swi-mdm9x15
 
-Reflash new image with Bluetooth driver module support to the target board
+Reflash new image with Frame Buffer driver module support to the target board
 
     FDT command: fdt yocto_wp85.cwe
 
