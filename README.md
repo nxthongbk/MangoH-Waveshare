@@ -4,8 +4,8 @@ For integration MangoH Red and Wave Share E-Ink Display
 
 1. Download Legato Distribution Source Package from sierra wireless website:
 
-    Yocto Source (Around 3 GB)
-    The file name is Legato-Dist-Source-mdm9x15-SWI9X15Y_07.10.04.00.tar.bz2
+    i <!--Yocto Source (Around 4 GB)
+    The file name is Legato-Dist-Source-mdm9x15-SWI9X15Y_07.10.04.00.tar.bz2--!>
 
 2. Extract the downloaded Distribution source package:
 
