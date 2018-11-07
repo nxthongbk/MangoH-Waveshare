@@ -1,0 +1,13 @@
+sources:
+{
+    fbws.c
+}
+
+cflags:
+{
+//    -DDEBUG
+}
+
+params:
+{
+}
