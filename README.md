@@ -64,7 +64,8 @@ Check new build CWE images: yocto_wp85.cwe
 
 Reflash new image with Frame Buffer driver module support to the target board
 
-    FDT command: fdt yocto_wp85.cwe
+    on Windows: FDT command: fdt yocto_wp85.cwe 
+    on Linux: by command: fwupdate download yocto_wp85.cwe
 
 
 
