@@ -122,7 +122,7 @@ static struct our_function our_cfg_script[] = {
 
 
 static struct fb_fix_screeninfo ourfb_fix ={
-	.id =		"ST7735", 
+	.id =		"waveshare213", 
 	.type =		FB_TYPE_PACKED_PIXELS,
 	.visual =	FB_VISUAL_PSEUDOCOLOR,
 	.xpanstep =	0,
@@ -417,6 +417,7 @@ static ssize_t ourfb_write(struct fb_info *info, const char __user *buf,
 
 static struct fb_ops ourfb_ops = {
 	.owner		= THIS_MODULE,
+	//.fb_read	= fb_sys_read,
 	.fb_read	= ourfb_read,
 	.fb_write	= ourfb_write,
 	.fb_fillrect	= ourfb_fillrect,
@@ -427,7 +428,7 @@ static struct fb_ops ourfb_ops = {
 
 static void ourfb_deferred_io(struct fb_info *info,	struct list_head *pagelist)
 {
-	//ourfb_update_display(info->par);
+	ourfb_update_display(info->par);
 }
 
 // static struct fb_deferred_io ourfb_defio = {
@@ -453,15 +454,17 @@ static int ourfb_spi_init(struct spi_device *spi)
 	u8 *vmem;
 	struct ourfb_par *par;
 
-
-	printk("start ourfb_spi_init\n");
+	printk("start vmem:\n");
 	vmem = vzalloc(vmem_size);
 	if (!vmem)
 		return retval;
 
 	info =framebuffer_alloc(sizeof(struct ourfb_par),&spi ->dev);
 	if (!info)
+	{
+		printk("Error in alloc:\n");
 		goto fballoc_fail;
+	}
 
 
 	info->screen_base = (u8 __force __iomem *)vmem;
@@ -479,9 +482,9 @@ static int ourfb_spi_init(struct spi_device *spi)
 	info->var.transp.offset = 0;
 	info->var.transp.length = 0;
 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
-	// info->fbdefio = &ourfb_defio;
+	//info->fbdefio = &ourfb_defio;
 
-	// fb_deferred_io_init(info);
+	//fb_deferred_io_init(info);
 
 	par = info->par;
 	par->info = info;
@@ -541,7 +544,7 @@ static void ourfb_spi_remove(struct spi_device *spi)
 
 
 static struct spi_device_id ourfb_spi_tbl[]={
-	{"waveshare",0},
+	{"waveshare213",0},
 	{ },
 };
 
@@ -551,7 +554,7 @@ static struct spi_device_id ourfb_spi_tbl[]={
 
 static struct spi_driver ourfb_driver={
 	.driver={
-		.name 		=	"waveshare",
+		.name 		=	"waveshare213",
 		.owner 		=THIS_MODULE,
 
 	},
@@ -564,8 +567,10 @@ static struct spi_driver ourfb_driver={
 
 static int __init ourfb_init(void)
 {
-	printk("init fb driver\n");
+	printk("new init fb driver\n");
+	
 	return spi_register_driver(&ourfb_driver);
+
 }
 
 static void __exit ourfb_exit(void)
