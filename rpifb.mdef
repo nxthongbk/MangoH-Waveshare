@@ -1,0 +1,13 @@
+sources:
+{
+    rpifb.c
+}
+
+cflags:
+{
+//    -DDEBUG
+}
+
+params:
+{
+}
