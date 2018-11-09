@@ -13,14 +13,12 @@
 #include <linux/vmalloc.h>
 #include <linux/init.h>
 #include <linux/delay.h>
+
+#include <fb_draw.h>
 #include <linux/uaccess.h>
 
 
 #include "fbws.h"
-
-
-
-
 
 static struct our_function our_cfg_script[] = {
 	{ WS_START, WS_START},
@@ -304,7 +302,7 @@ void ourfb_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
 {
 	struct ourfb_par *par = info->par;
 
-	//sys_fillrect(info, rect);
+	sys_fillrect(info, rect);
 
 	ourfb_update_display(par);
 }
@@ -313,7 +311,7 @@ void ourfb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
 {
 	struct ourfb_par *par = info->par;
 
-	//sys_copyarea(info, area);
+	sys_copyarea(info, area);
 
 	ourfb_update_display(par);
 }
@@ -322,7 +320,7 @@ void ourfb_imageblit(struct fb_info *info, const struct fb_image *image)
 {
 	struct ourfb_par *par = info->par;
 
-	//sys_imageblit(info, image);
+	sys_imageblit(info, image);
 
 	ourfb_update_display(par);
 }
