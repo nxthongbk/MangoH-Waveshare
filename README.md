@@ -37,19 +37,13 @@ For integration MangoH Red and Wave Share E-Ink Display
         Run command: bitbake linux-yocto -c menuconfig
         Enter Device Driver -> Graphic Support
         Enter <M> Suport for frameBuffer devices
-            <!-- <M> RFCOMM protocol support
-            [*] RFCOMM TTY support
-            <M> BNEP protocol support
-            [*] Multicast filter support
-            [*] Protocol filter support
-            <M> HIDP protocol support --!>
-        Enter Frame buffer hardware devices
-            <M> HCI UART driver
-            [*] UART(H4) protocol support
-            [*] BCSP protocol support
-            [*] Atheros AR300x serial support
-            [*] HCILL protocol support
-            [*] Threewire UART(HS) protocol support
+            <M> Ion Memory Manager
+            <> Lowlevel video output switch controls
+            <*> Support for frame buffer devices  
+            Console display driver support 
+            <*> Framebuffer Console support
+            [*]     Map the console to primary display device
+            [*]     Framebuffer Console Rotation
     Exit and save Frame Buffer Linux config
     Rebuild kernel image: bitbake -f linux-yocto
  
