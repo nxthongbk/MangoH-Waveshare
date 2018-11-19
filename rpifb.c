@@ -1,6 +1,6 @@
 #include <linux/module.h>
 #include <linux/spi/spi.h>
-#include "rpifb.h"
+#include "fbws.h"
 
 #define SPI_BUS 	0
 #define SPI_BUS_CS1 	0
@@ -9,8 +9,8 @@
 const char this_driver_name[] = "waveshare213";
 
 static struct ourfb_platform_data ourfb_data = {
-       .rst_gpio       = 23,
-       .dc_gpio        = 24,
+       .rst_gpio       = 24,
+       .dc_gpio        = 22,
 };
 
 
@@ -22,6 +22,8 @@ static int __init add_ourfb_device_to_bus(void)
 	char buff[64];
 	int status = 0;
 
+	printk("add_ourfb_device_to_bus is called\n");
+
 	spi_master = spi_busnum_to_master(SPI_BUS);
 	if (!spi_master) {
 		printk(KERN_ALERT "spi_busnum_to_master(%d) returned NULL\n",
@@ -30,6 +32,7 @@ static int __init add_ourfb_device_to_bus(void)
 		return -1;
 	}
 
+	printk("spi_alloc_device\n");
 	spi_device = spi_alloc_device(spi_master);
 	if (!spi_device) {
 		put_device(&spi_master->dev);
@@ -40,13 +43,21 @@ static int __init add_ourfb_device_to_bus(void)
 	/* specify a chip select line */
 	spi_device->chip_select = SPI_BUS_CS1;
 
+	printk("GET SPI Device\n");
+
 	/* Check whether this SPI bus.cs is already claimed */
 	snprintf(buff, sizeof(buff), "%s.%u", 
 			dev_name(&spi_device->master->dev),
 			spi_device->chip_select);
 
+	printk(buff);
+	printk("bus_find_device_by_name is called\n");
 	pdev = bus_find_device_by_name(spi_device->dev.bus, NULL, buff);
+
+
  	if (pdev) {
+
+ 		printk("have pdev\n");
 		/* We are not going to use this spi_device, so free it */ 
 		spi_dev_put(spi_device);
 		
@@ -58,6 +69,7 @@ static int __init add_ourfb_device_to_bus(void)
 		 */
 		if (pdev->driver && pdev->driver->name && 
 				strcmp(this_driver_name, pdev->driver->name)) {
+			printk("device is register\n");
 			printk(KERN_ALERT 
 				"Driver [%s] already registered for %s\n",
 				pdev->driver->name, buff);
@@ -66,7 +78,7 @@ static int __init add_ourfb_device_to_bus(void)
 	} else {
 		spi_device->dev.platform_data = &ourfb_data;
 		spi_device->max_speed_hz = SPI_BUS_SPEED;
-		spi_device->mode = SPI_MODE_3;
+		spi_device->mode = SPI_MODE_0;
 		spi_device->bits_per_word = 8;
 		spi_device->irq = -1;
 		spi_device->controller_state = NULL;

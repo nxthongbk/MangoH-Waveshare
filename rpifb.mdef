@@ -5,7 +5,8 @@ sources:
 
 cflags:
 {
-//    -DDEBUG
+	-DCONFIG_FBWS
+    -DCONFIG_RPIFB
 }
 
 params:

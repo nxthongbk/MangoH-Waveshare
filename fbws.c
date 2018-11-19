@@ -14,8 +14,10 @@
 #include <linux/init.h>
 #include <linux/delay.h>
 
-#include <fb_draw.h>
 #include <linux/uaccess.h>
+
+#include <linux/rmap.h>
+#include <linux/pagemap.h>
 
 
 #include "fbws.h"
@@ -153,7 +155,6 @@ static int our_write(struct ourfb_par *par, u8 data)
 static void our_write_data(struct ourfb_par *par, u8 data)
 {
 	int ret = 0;
-
 	/* Set data mode */
 	gpio_set_value(par->dc, 1);
 
@@ -187,60 +188,127 @@ static void our_write_cmd(struct ourfb_par *par, u8 data)
 			par->info->fix.id, data, ret);
 }
 
-static void our_run_cfg_script(struct ourfb_par *par)
+/**
+*	@brief: wait until the busy pin goes LOW
+*/
+static void wait_until_idle(void)
 {
-	int i = 0;
-	int end_script = 0;
-
-	do {
-		switch (our_cfg_script[i].cmd)
-		{
-		case WS_START:
-			break;
-		case WS_CMD:
-			our_write_cmd(par,
-				our_cfg_script[i].data & 0xff);
-			break;
-		case WS_DATA:
-			our_write_data(par,
-				our_cfg_script[i].data & 0xff);
-			break;
-		case WS_DELAY:
-			mdelay(our_cfg_script[i].data);
-			break;
-		case WS_END:
-			end_script = 1;
-		}
-		i++;
-	} while (!end_script);
+	//wait BUSY PIN HERE TBD
+	mdelay(100);
 }
 
+/**
+*	@brief: set address for data R/W
+*/
 static void our_set_addr_win(struct ourfb_par *par,
 				int xs, int ys, int xe, int ye)
 {
-	our_write_cmd(par, WS_CASET);
+	//set address_win
+	our_write_cmd(par, WS_SET_RAM_X_ADDRESS_START_END_POSITION);
 	our_write_data(par, 0x00);
 	our_write_data(par, xs+2);
 	our_write_data(par, 0x00);
 	our_write_data(par, xe+2);
-	our_write_cmd(par, WS_RASET);
+
+	our_write_cmd(par, WS_SET_RAM_Y_ADDRESS_START_END_POSITION);
 	our_write_data(par, 0x00);
 	our_write_data(par, ys+1);
 	our_write_data(par, 0x00);
 	our_write_data(par, ye+1);
 }
 
+/**
+*	@brief: set address start point for data R/W
+*/
+static void our_set_addr_pointer(struct ourfb_par *par,
+				int x, int y)
+{
+	//set address_win
+	our_write_cmd(par, WS_SET_RAM_X_ADDRESS_COUNTER);
+	our_write_data(par, 0x00);
+	our_write_data(par, x+2);
+
+	our_write_cmd(par, WS_SET_RAM_Y_ADDRESS_COUNTER);
+	our_write_data(par, 0x00);
+	our_write_data(par, y+1);
+
+	wait_until_idle();
+}
+
+/**
+*	@brief: clear the frame memory with the specified color
+*		this won't update display.
+*/
+static void our_clear_frame_memory(struct ourfb_par *par,u8 color)
+{
+	our_set_addr_win(par,0,0,WIDTH-1, HEIGHT-1);
+	/* set the frame memory line by line*/
+	int j=0;
+	int i=0;
+	for(j = 0;j < HEIGHT; j++)
+	{
+		our_set_addr_pointer(par, 0, j);
+		our_write_cmd(par, WS_WRITE_RAM);
+		for(i = 0; i < HEIGHT/8; i++)
+			{
+				our_write_data(par, color);
+			}
+	}
+
+}
+
+
+static void our_run_cfg_script(struct ourfb_par *par)
+{
+	printk("our_run_cfg_script is called\n");
+
+	// int i = 0;
+	// int end_script = 0;
+
+	// do {
+	// 	switch (our_cfg_script[i].cmd)
+	// 	{
+	// 	case WS_START:
+	// 		break;
+	// 	case WS_CMD:
+	// 		our_write_cmd(par,
+	// 			our_cfg_script[i].data & 0xff);
+	// 		break;
+	// 	case WS_DATA:
+	// 		our_write_data(par,
+	// 			our_cfg_script[i].data & 0xff);
+	// 		break;
+	// 	case WS_DELAY:
+	// 		mdelay(our_cfg_script[i].data);
+	// 		break;
+	// 	case WS_END:
+	// 		end_script = 1;
+	// 	}
+	// 	i++;
+	// } while (!end_script);
+}
+
+
+
+
+
+
 static void our_reset(struct ourfb_par *par)
 {
+	printk("our_reset is called\n");
+
 	/* Reset controller */
 	gpio_set_value(par->rst, 0);
 	udelay(10);
 	gpio_set_value(par->rst, 1);
-	mdelay(120);
+	udelay(120);
 }
 
 static void ourfb_update_display(struct ourfb_par *par)
 {
+	
+	//printk("ourfb_update_display is called\n");
+
 	int ret = 0;
 	u8 *vmem = par->info->screen_base;
 #ifdef __LITTLE_ENDIAN
@@ -266,6 +334,8 @@ static void ourfb_update_display(struct ourfb_par *par)
 	/* Internal RAM write command */
 	our_write_cmd(par, WS_RAMWR);
 
+	
+
 	/* Blast framebuffer to ST7735 internal display RAM */
 #ifdef __LITTLE_ENDIAN
 	ret = our_write_data_buf(par, (u8 *)ssbuf, WIDTH*HEIGHT*BPP/8);
@@ -283,6 +353,8 @@ static void ourfb_update_display(struct ourfb_par *par)
 
 static int ourfb_init_display(struct ourfb_par *par)
 {
+	printk("ourfb_init_display is called\n");
+
 	/* TODO: Need some error checking on gpios */
 
         /* Request GPIOs and initialize to default values */
@@ -300,27 +372,32 @@ static int ourfb_init_display(struct ourfb_par *par)
 
 void ourfb_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
 {
+	printk("ourfb_fillrect is called\n");
+
 	struct ourfb_par *par = info->par;
 
-	sys_fillrect(info, rect);
+	//sys_fillrect(info, rect);
 
 	ourfb_update_display(par);
 }
 
 void ourfb_copyarea(struct fb_info *info, const struct fb_copyarea *area) 
 {
+	printk("ourfb_copyarea is called\n");
 	struct ourfb_par *par = info->par;
 
-	sys_copyarea(info, area);
+	//sys_copyarea(info, area);
 
 	ourfb_update_display(par);
 }
 
 void ourfb_imageblit(struct fb_info *info, const struct fb_image *image) 
 {
+	printk("ourfb_imageblit is called\n");
+
 	struct ourfb_par *par = info->par;
 
-	sys_imageblit(info, image);
+	//sys_imageblit(info, image);
 
 	ourfb_update_display(par);
 }
@@ -330,6 +407,8 @@ void ourfb_imageblit(struct fb_info *info, const struct fb_image *image)
 static ssize_t ourfb_read(struct fb_info *info, const char __user *buf,
 		size_t count, loff_t *ppos)
 {
+	printk("ourfb_read is called\n");
+
 	struct outfb_par *par = info->par;
 	unsigned long p = *ppos;
 	void *dst;
@@ -373,6 +452,8 @@ static ssize_t ourfb_read(struct fb_info *info, const char __user *buf,
 static ssize_t ourfb_write(struct fb_info *info, const char __user *buf,
 		size_t count, loff_t *ppos)
 {
+	
+	printk("write from user space\n");
 	struct outfb_par *par = info->par;
 	unsigned long p = *ppos;
 	void *dst;
@@ -424,21 +505,16 @@ static struct fb_ops ourfb_ops = {
 };
 
 
-static void ourfb_deferred_io(struct fb_info *info,	struct list_head *pagelist)
-{
-	ourfb_update_display(info->par);
-}
+// static void ourfb_deferred_io(struct fb_info *info,	struct list_head *pagelist)
+//  {
+//  	ourfb_update_display(info->par);
+//  } 
 
 // static struct fb_deferred_io ourfb_defio = {
 // 	.delay		= HZ,
 // 	.deferred_io	= ourfb_deferred_io,
 // };
 
-//Old source from pci
-// static struct spi_device_id ourfb_spi_tbl[]={
-// 	{SPI_VENDOR_ID_123,SPI_DEVICE_ID_123,SPI_ANY_ID,SPI_ANY_ID},
-// 	{0}
-// };
 
 static int ourfb_spi_init(struct spi_device *spi)
 {
@@ -464,7 +540,7 @@ static int ourfb_spi_init(struct spi_device *spi)
 		goto fballoc_fail;
 	}
 
-
+	
 	info->screen_base = (u8 __force __iomem *)vmem;
 	info->fbops = &ourfb_ops;
 	info->fix = ourfb_fix;
@@ -480,9 +556,11 @@ static int ourfb_spi_init(struct spi_device *spi)
 	info->var.transp.offset = 0;
 	info->var.transp.length = 0;
 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
-	//info->fbdefio = &ourfb_defio;
+	
 
-	//fb_deferred_io_init(info);
+	
+	// info->fbdefio = &ourfb_defio;
+	// fb_deferred_io_init(info);
 
 	par = info->par;
 	par->info = info;
@@ -576,25 +654,6 @@ static void __exit ourfb_exit(void)
 	printk("remove fb driver\n");
 	spi_unregister_driver(&ourfb_driver);
 }
-
-
-// tatic int __init fbws_init(struct fb_info *fb_info)
-// {
-// 	struct fb_info *info;
-// 	register_framebuffer(info);
-// 	return 0;
-// }
-
-// static void __exit fbws_exit(void)
-// {
-// 	struct fb_info *p;
-// 	unregister_framebuffer(p);
-// 	framebuffer_release(p)
-
-// }
-
-
-
 
 
 module_init(ourfb_init);
