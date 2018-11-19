@@ -9,8 +9,8 @@
 const char this_driver_name[] = "waveshare213";
 
 static struct ourfb_platform_data ourfb_data = {
-       .rst_gpio       = 24,
-       .dc_gpio        = 22,
+       .rst_gpio       = 42,
+       .dc_gpio        = 33,
 };
 
 
