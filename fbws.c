@@ -262,34 +262,31 @@ static void our_run_cfg_script(struct ourfb_par *par)
 {
 	printk("our_run_cfg_script is called\n");
 
-	// int i = 0;
-	// int end_script = 0;
+	int i = 0;
+	int end_script = 0;
 
-	// do {
-	// 	switch (our_cfg_script[i].cmd)
-	// 	{
-	// 	case WS_START:
-	// 		break;
-	// 	case WS_CMD:
-	// 		our_write_cmd(par,
-	// 			our_cfg_script[i].data & 0xff);
-	// 		break;
-	// 	case WS_DATA:
-	// 		our_write_data(par,
-	// 			our_cfg_script[i].data & 0xff);
-	// 		break;
-	// 	case WS_DELAY:
-	// 		mdelay(our_cfg_script[i].data);
-	// 		break;
-	// 	case WS_END:
-	// 		end_script = 1;
-	// 	}
-	// 	i++;
-	// } while (!end_script);
+	do {
+		switch (our_cfg_script[i].cmd)
+		{
+		case WS_START:
+			break;
+		case WS_CMD:
+			our_write_cmd(par,
+				our_cfg_script[i].data & 0xff);
+			break;
+		case WS_DATA:
+			our_write_data(par,
+				our_cfg_script[i].data & 0xff);
+			break;
+		case WS_DELAY:
+			mdelay(our_cfg_script[i].data);
+			break;
+		case WS_END:
+			end_script = 1;
+		}
+		i++;
+	} while (!end_script);
 }
-
-
-
 
 
 
@@ -349,6 +346,58 @@ static void ourfb_update_display(struct ourfb_par *par)
 
 
 
+static void ourfb_update_display1(struct ourfb_par *par)
+{
+	//Set memory Area
+	printk("Set memory Area\n");
+	int x_start = 0;
+	int y_start = 0;
+	int x_end = WIDTH-1;
+	int y_end = HEIGHT-1;
+
+	our_write_cmd(par, WS_SET_RAM_X_ADDRESS_START_END_POSITION);
+	our_write_data(par, (x_start >> 3) & 0xFF);
+	our_write_data(par, (x_end >> 3) & 0xFF);
+
+	our_write_cmd(par, WS_SET_RAM_Y_ADDRESS_START_END_POSITION);
+	our_write_data(par,y_start & 0xFF);
+	our_write_data(par, (y_start >> 8) & 0xFF);
+	our_write_data(par,y_end & 0xFF);
+	our_write_data(par, (y_end >> 8) & 0xFF);
+	//End Set Memory Area
+	
+	//Start set frame memory line by ine
+	printk("Start set frame memory line by line\n");
+	int j=0;
+	for (j = 0; j < HEIGHT; j++)
+	{
+		//Set memory Pointer 0 j
+		our_write_cmd(par, WS_SET_RAM_X_ADDRESS_COUNTER);
+		our_write_data(par, (0 >> 3) & 0xFF);
+
+		our_write_cmd(par, WS_SET_RAM_Y_ADDRESS_COUNTER);
+		our_write_data(par, y_end & 0xFF);
+		our_write_data(par, (j >> 8) & 0xFF);
+		//Send command writeRAM
+		our_write_cmd(par, WS_RAMWR);
+		int i = 0;
+		for(i = 0; i < WIDTH/8 ;i++)
+		{
+			//send color
+			our_write_data(par,0xFF);
+		}
+	}
+	//end set frame memory
+	//start display Frame
+	our_write_cmd(par, WS_DISPLAY_UPDATE_CONTROL_2);
+	our_write_data(par, 0xC4);
+	our_write_cmd(par, WS_RAMWR);
+	our_write_cmd(par, WS_RAMWR);
+
+	wait_until_idle();
+	
+}
+
 
 
 static int ourfb_init_display(struct ourfb_par *par)
@@ -356,6 +405,12 @@ static int ourfb_init_display(struct ourfb_par *par)
 	printk("ourfb_init_display is called\n");
 
 	/* TODO: Need some error checking on gpios */
+		gpio_request(par->rst, "sysfs"); 
+		gpio_request(par->dc, "sysfs");
+		        
+   		gpio_export(par->rst, true);   
+   		gpio_export(par->dc, true);      
+
 
         /* Request GPIOs and initialize to default values */
         gpio_request_one(par->rst, GPIOF_OUT_INIT_HIGH,
@@ -452,6 +507,10 @@ static ssize_t ourfb_read(struct fb_info *info, const char __user *buf,
 static ssize_t ourfb_write(struct fb_info *info, const char __user *buf,
 		size_t count, loff_t *ppos)
 {
+	// printk("write from user space\n");
+	// struct outfb_par *par = info->par;
+	//ourfb_update_display(par);
+	//return 0;
 	
 	printk("write from user space\n");
 	struct outfb_par *par = info->par;
@@ -459,6 +518,8 @@ static ssize_t ourfb_write(struct fb_info *info, const char __user *buf,
 	void *dst;
 	int err = 0;
 	unsigned long total_size;
+
+	ourfb_update_display1(par);
 
 	if (info->state != FBINFO_STATE_RUNNING)
 		return -EPERM;
@@ -496,14 +557,29 @@ static ssize_t ourfb_write(struct fb_info *info, const char __user *buf,
 
 static struct fb_ops ourfb_ops = {
 	.owner		= THIS_MODULE,
+	.fb_read	=fb_sys_read,
 	//.fb_read	= fb_sys_read,
-	.fb_read	= ourfb_read,
+	//.fb_read	= ourfb_read,
 	.fb_write	= ourfb_write,
-	.fb_fillrect	= ourfb_fillrect,
-	.fb_copyarea	= ourfb_copyarea,
-	.fb_imageblit	= ourfb_imageblit,
+	// .fb_fillrect	= ourfb_fillrect,
+	// .fb_copyarea	= ourfb_copyarea,
+	// .fb_imageblit	= ourfb_imageblit,
+
+	.fb_fillrect	= cfb_fillrect,
+	.fb_copyarea	= cfb_copyarea,
+	.fb_imageblit	= cfb_imageblit,
 };
 
+
+static void ourfb_deferred_io(struct fb_info *info,
+				struct list_head *pagelist)
+{
+	ourfb_update_display(info->par);
+}
+static struct fb_deferred_io ourfb_defio = {
+	.delay		= HZ,
+	.deferred_io	= ourfb_deferred_io,
+};
 
 // static void ourfb_deferred_io(struct fb_info *info,	struct list_head *pagelist)
 //  {
@@ -514,6 +590,17 @@ static struct fb_ops ourfb_ops = {
 // 	.delay		= HZ,
 // 	.deferred_io	= ourfb_deferred_io,
 // };
+
+// static void hecubar_dpy__deferred_io(struct fb_info *info,	struct list_head *pagelist)
+//  {
+//  	ourfb_update_display(info->par);
+//  } 
+
+// static struct fb_deferred_io hecubafb_defio = {
+// 	.delay		= HZ,
+// 	.deferred_io	= hecubar_dpy__deferred_io,
+// };
+
 
 
 static int ourfb_spi_init(struct spi_device *spi)
@@ -529,9 +616,14 @@ static int ourfb_spi_init(struct spi_device *spi)
 	struct ourfb_par *par;
 
 	printk("start vmem:\n");
-	vmem = vzalloc(vmem_size);
+
+	vmem = vmalloc(vmem_size);
 	if (!vmem)
 		return retval;
+	
+	//vmem = vzalloc(vmem_size);
+	//if (!vmem)
+	//	return retval;
 
 	info =framebuffer_alloc(sizeof(struct ourfb_par),&spi ->dev);
 	if (!info)
@@ -557,16 +649,22 @@ static int ourfb_spi_init(struct spi_device *spi)
 	info->var.transp.length = 0;
 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
 	
-
 	
-	// info->fbdefio = &ourfb_defio;
+
+	//Init FBIO
+	// info->fbdefio = &hecubafb_defio;
 	// fb_deferred_io_init(info);
+	
+	info->fbdefio = &ourfb_defio;
+	fb_deferred_io_init(info);
 
 	par = info->par;
 	par->info = info;
 	par->spi = spi;
 	par->rst = pdata->rst_gpio;
 	par->dc = pdata->dc_gpio;
+
+	
 
 #ifdef __LITTLE_ENDIAN
 	/* Allocate swapped shadow buffer */
@@ -592,6 +690,8 @@ static int ourfb_spi_init(struct spi_device *spi)
 	printk(KERN_INFO
 		"fb%d: %s frame buffer device,\n\tusing %d KiB of video memory\n",
 		info->node, info->fix.id, vmem_size);
+
+	printk("fb is created");
 
 	return 0;
 
