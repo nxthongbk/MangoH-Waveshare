@@ -4,13 +4,15 @@
 
 #define SPI_BUS 	0
 #define SPI_BUS_CS1 	0
-#define SPI_BUS_SPEED 	12000000
+#define SPI_BUS_SPEED 	960000
+//#define SPI_BUS_SPEED 	2000000
 
 const char this_driver_name[] = "waveshare213";
 
 static struct ourfb_platform_data ourfb_data = {
-       .rst_gpio       = 42,
-       .dc_gpio        = 33,
+       .rst_gpio       = 54, //IOT0_GPI03- GPIOPIN3
+       //.dc_gpio        = 29, //IOT0_GPIO4- GPIOPIN4
+       .dc_gpio        = 49, //RPI GPIO 22 - Pin 11
 };
 
 
@@ -39,9 +41,15 @@ static int __init add_ourfb_device_to_bus(void)
 		printk(KERN_ALERT "spi_alloc_device() failed\n");
 		return -1;
 	}
-
 	/* specify a chip select line */
 	spi_device->chip_select = SPI_BUS_CS1;
+
+	spi_device->max_speed_hz =SPI_BUS_SPEED;
+	spi_device->mode =SPI_MODE_0;
+	spi_device->bits_per_word = 8;
+	spi_device->irq = -1;
+	//spi_device->controller_state = NULL;
+	//spi_device->controller_data = NULL;
 
 	printk("GET SPI Device\n");
 
@@ -64,6 +72,7 @@ static int __init add_ourfb_device_to_bus(void)
 		/* 
 		 * There is already a device configured for this bus.cs combination.
 		 * It's okay if it's us. This happens if we previously loaded then 
+
                  * unloaded our driver. 
                  * If it is not us, we complain and fail.
 		 */
@@ -78,7 +87,7 @@ static int __init add_ourfb_device_to_bus(void)
 	} else {
 		spi_device->dev.platform_data = &ourfb_data;
 		spi_device->max_speed_hz = SPI_BUS_SPEED;
-		spi_device->mode = SPI_MODE_0;
+		spi_device->mode = SPI_MODE_3;
 		spi_device->bits_per_word = 8;
 		spi_device->irq = -1;
 		spi_device->controller_state = NULL;
