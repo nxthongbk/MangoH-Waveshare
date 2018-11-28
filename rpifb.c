@@ -13,6 +13,8 @@ static struct ourfb_platform_data ourfb_data = {
        .rst_gpio       = 54, //IOT0_GPI03- GPIOPIN3
        //.dc_gpio        = 29, //IOT0_GPIO4- GPIOPIN4
        .dc_gpio        = 49, //RPI GPIO 22 - Pin 11
+
+       .busy_gpio	=	61, //GPIO pin 7
 };
 
 

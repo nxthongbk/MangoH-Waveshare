@@ -22,103 +22,6 @@
 
 #include "fbws.h"
 
-static struct our_function our_cfg_script[] = {
-	{ WS_START, WS_START},
-	{ WS_CMD,   WS_SWRESET},
-	{ WS_DELAY, 150},
-	{ WS_CMD,  WS_SLPOUT},
-	{ WS_DELAY, 500},
-	{ WS_CMD, WS_FRMCTR1},
-	{ WS_DATA, 0x01},
-	{ WS_DATA, 0x2c},
-	{ WS_DATA, 0x2d},
-	{ WS_CMD,  WS_FRMCTR2},
-	{ WS_DATA, 0x01},
-	{ WS_DATA, 0x2c},
-	{ WS_DATA, 0x2d},
-	{ WS_CMD,  WS_FRMCTR3},
-	{ WS_DATA, 0x01},
-	{ WS_DATA, 0x2c},
-	{ WS_DATA, 0x2d},
-	{ WS_DATA, 0x01},
-	{ WS_DATA, 0x2c},
-	{ WS_DATA, 0x2d},
-	{ WS_CMD,  WS_INVCTR},
-	{ WS_DATA, 0x07},
-	{ WS_CMD,  WS_PWCTR1},
-	{ WS_DATA, 0xa2},
-	{ WS_DATA, 0x02},
-	{ WS_DATA, 0x84},
-	{ WS_CMD,  WS_PWCTR2},
-	{ WS_DATA, 0xc5},
-	{ WS_CMD,  WS_PWCTR3},
-	{ WS_DATA, 0x0a},
-	{ WS_DATA, 0x00},
-	{ WS_CMD,  WS_PWCTR4},
-	{ WS_DATA, 0x8a},
-	{ WS_DATA, 0x2a},
-	{ WS_CMD,  WS_PWCTR5},
-	{ WS_DATA, 0x8a},
-	{ WS_DATA, 0xee},
-	{ WS_CMD,  WS_VMCTR1},
-	{ WS_DATA, 0x0e},
-	{ WS_CMD,  WS_INVOFF},
-	{ WS_CMD,  WS_MADCTL},
-	{ WS_DATA, 0xc8},
-	{ WS_CMD,  WS_COLMOD},
-	{ WS_DATA, 0x05},
-	{ WS_CMD,  WS_CASET},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x7f},
-	{ WS_CMD,  WS_RASET},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x9f},
-	{ WS_CMD,  WS_GMCTRP1},
-	{ WS_DATA, 0x02},
-	{ WS_DATA, 0x1c},
-	{ WS_DATA, 0x07},
-	{ WS_DATA, 0x12},
-	{ WS_DATA, 0x37},
-	{ WS_DATA, 0x32},
-	{ WS_DATA, 0x29},
-	{ WS_DATA, 0x2d},
-	{ WS_DATA, 0x29},
-	{ WS_DATA, 0x25},
-	{ WS_DATA, 0x2b},
-	{ WS_DATA, 0x39},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x01},
-	{ WS_DATA, 0x03},
-	{ WS_DATA, 0x10},
-	{ WS_CMD,  WS_GMCTRN1},
-	{ WS_DATA, 0x03},
-	{ WS_DATA, 0x1d},
-	{ WS_DATA, 0x07},
-	{ WS_DATA, 0x06},
-	{ WS_DATA, 0x2e},
-	{ WS_DATA, 0x2c},
-	{ WS_DATA, 0x29},
-	{ WS_DATA, 0x2d},
-	{ WS_DATA, 0x2e},
-	{ WS_DATA, 0x2e},
-	{ WS_DATA, 0x37},
-	{ WS_DATA, 0x3f},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x00},
-	{ WS_DATA, 0x02},
-	{ WS_DATA, 0x10},
-	{ WS_CMD,  WS_DISPON},
-	{ WS_DELAY, 100},
-	{ WS_CMD,  WS_NORON},
-	{ WS_DELAY, 10},
-	{ WS_END, WS_END},
-};
 
 
 
@@ -164,10 +67,15 @@ static struct fb_var_screeninfo ourfb_var = {
 
 static int our_write(struct ourfb_par *par, u8 data)
 {
-	u8 *ssbuf = par->ssbuf;
- 	ssbuf[0] = data;
+	// u8 *ssbuf = par->ssbuf;
+ // 	ssbuf[0] = data;
 
- 	return spi_write(par->spi, ssbuf, 2);
+ // 	return spi_write(par->spi, ssbuf, 2);
+
+
+	u8 txbuf[2];
+	txbuf[0] = data;
+	return spi_write(par->spi,&txbuf[0],1);
 }
 
 static void our_write_data(struct ourfb_par *par, u8 data)
@@ -177,8 +85,9 @@ static void our_write_data(struct ourfb_par *par, u8 data)
 
 	
 	gpio_set_value(par->dc, 1);
+	//mdelay(1);
 	//udelay(100);
-	//printk("write data: %02x\n",data);
+	//printk("   Data: %02x\n",data);
 
 	ret = our_write(par, data);
 	if (ret < 0)
@@ -187,6 +96,7 @@ static void our_write_data(struct ourfb_par *par, u8 data)
 		pr_err("%s: write data %02x failed with status %d\n",
 			par->info->fix.id, data, ret);
 	}
+	//mdelay(1);
 	
 }
 
@@ -195,7 +105,7 @@ static int our_write_data_buf(struct ourfb_par *par,
 {
 	/* Set data mode */
 	gpio_set_value(par->dc, 1);
-
+	mdelay(1);
 	/* Write entire buffer */
 	return spi_write(par->spi, txbuf, size);
 }
@@ -207,22 +117,29 @@ static void our_write_cmd(struct ourfb_par *par, u8 data)
 
 	/* Set command mode */
 	gpio_set_value(par->dc, 0);
-	//printk("DC=0 write command: %02x\n",data);
+	
+	//printk("Command: %02x\n",data);
 
 	ret = our_write(par, data);
 	if (ret < 0)
 		pr_err("%s: write command %02x failed with status %d\n",
 			par->info->fix.id, data, ret);
+	//mdelay(1);
 	
 }
 
 /**
 *	@brief: wait until the busy pin goes LOW
 */
-static void wait_until_idle(void)
+static void wait_until_idle(struct ourfb_par *par)
 {
 	//wait BUSY PIN HERE TBD
-	udelay(10);
+
+	while(gpio_get_value(par->busy) != 0)
+	{
+		mdelay(100);
+
+	}
 }
 
 /**
@@ -245,7 +162,7 @@ static void our_set_addr_win(struct ourfb_par *par,
 	our_write_data(par, ye+1);
 }
 
-
+/*
 static void our_run_cfg_script(struct ourfb_par *par)
 {
 	printk("our_run_cfg_script is called\n");
@@ -275,7 +192,7 @@ static void our_run_cfg_script(struct ourfb_par *par)
 		i++;
 	} while (!end_script);
 }
-
+*/
 
 //Reset display
 static void our_reset(struct ourfb_par *par)
@@ -424,7 +341,7 @@ static void set_memory_pointer(struct ourfb_par *par,int x, int y)
 	our_write_cmd(par, WS_SET_RAM_Y_ADDRESS_COUNTER);
 	our_write_data(par, y & 0xFF);
 	our_write_data(par, (y >> 8) & 0xFF);
-	wait_until_idle();
+	wait_until_idle(par);
 }
 
 
@@ -437,7 +354,7 @@ static void clear_frame_memory(struct ourfb_par *par,unsigned char color)
 	for(j = 0; j < HEIGHT ;j++)
 	{
 		set_memory_pointer(par,0 , j);
-		our_write_cmd(par, WS_RAMWR);
+		our_write_cmd(par, WS_WRITE_RAM);
 		int i;
 		for(i = 0; i < WIDTH/8 ;i++)
 		{
@@ -450,17 +367,26 @@ static void clear_frame_memory(struct ourfb_par *par,unsigned char color)
 
 static void set_frame_memory(void)
 {
+	
+
 	//Will be developer to diplay image
 }
 
 static void display_frame(struct ourfb_par *par)
 {
+	printk("call display frame\n");
 	our_write_cmd(par, WS_DISPLAY_UPDATE_CONTROL_2);
 	our_write_data(par, 0xC4);
 	our_write_cmd(par, WS_MASTER_ACTIVATION);
 	our_write_cmd(par, WS_TERMINATE_FRAME_READ_WRITE);
 	
-	wait_until_idle();
+	printk("End Write\n");
+
+
+	wait_until_idle(par);
+
+	printk("call display frame end\n");
+
 }
 
 
@@ -499,7 +425,7 @@ static void ourfb_update_display1(struct ourfb_par *par)
 		our_write_data(par, y_end & 0xFF);
 		our_write_data(par, (j >> 8) & 0xFF);
 		//Send command writeRAM
-		our_write_cmd(par, WS_RAMWR);
+		our_write_cmd(par, WS_WRITE_RAM);
 		int i = 0;
 		for(i = 0; i < WIDTH/8 ;i++)
 		{
@@ -514,7 +440,7 @@ static void ourfb_update_display1(struct ourfb_par *par)
 	our_write_cmd(par, WS_MASTER_ACTIVATION);
 	our_write_cmd(par, WS_TERMINATE_FRAME_READ_WRITE);
 	printk("End Display and out\n");
-	wait_until_idle();
+	wait_until_idle(par);
 	
 }
 
@@ -527,6 +453,7 @@ static int ourfb_init_display(struct ourfb_par *par)
 	/* TODO: Need some error checking on gpios */
 	gpio_request(par->rst, "sysfs"); 
 	gpio_request(par->dc, "sysfs");
+	gpio_request(par->busy, "sysfs");
 	        
     gpio_direction_output(par->dc, true);   // Set the gpio to be in output mode and on
    	gpio_set_value(par->dc, 0);          // Not required as set by line above (here for reference)
@@ -536,15 +463,42 @@ static int ourfb_init_display(struct ourfb_par *par)
    	gpio_set_value(par->rst, 0);          // Not required as set by line above (here for reference)
    	gpio_export(par->rst, true);
 
+
+   	gpio_direction_input(par->busy);   // Set the gpio to be in output mode and on
+   	gpio_set_value(par->busy, 0);          // Not required as set by line above (here for reference)
+   	gpio_export(par->busy, true);
+
+
+
+    if(int_lut(par,lut_full_update)!=0)
+	 {
+	 	printk("Init lut error");
+	 } 
+	//  int k;
+	//  int u;
+
+	// for(u=0;u<100000;u++)
+	// {
+	// 	for(k=0; k < 100000;k++)
+	// 	{
+		
+	// 	our_write_data(par,0x00);
+
+	// 	//mdelay(1000);
+		
+	// 	our_write_cmd(par,0x55);
+	// 	//mdelay(1000);
+	// 	}
+	// }
+
+
 	
 
-	if(int_lut(par,lut_full_update)!=0)
-	{
-		printk("Init lut error");
-	}	
+	 clear_frame_memory(par,0xFF);
+	 display_frame(par);
 
-	clear_frame_memory(par,0xFF);
-	display_frame(par);
+	// clear_frame_memory(par,0x00);
+	//display_frame(par);
 
 	return 0;
 }
@@ -813,6 +767,7 @@ static int ourfb_spi_init(struct spi_device *spi)
 	par->spi = spi;
 	par->rst = pdata->rst_gpio;
 	par->dc = pdata->dc_gpio;
+	par->busy = pdata->busy_gpio;
 
 	
 
