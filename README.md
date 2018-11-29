@@ -39,7 +39,28 @@ For integration MangoH Red and Wave Share E-Ink Display
         Enter <M> Suport for frameBuffer devices
             <M> Ion Memory Manager
             <> Lowlevel video output switch controls
-            <*> Support for frame buffer devices  
+            <*> Support for frame buffer devices 
+                 [*] Enable firmware EDID
+                 [*] Framebuffer foreign endianess support --->
+                 -*- Enable Video Mode Hangling Helper
+                 [*] Enable Tile Blitting Support
+                     ***Frame buffer hardware drivers***
+                 <M> OpenCores VGA/LCD core 2.0 framebuffer support
+                 <M> Epson S1D13XXX framebuffer support
+                 <M> Toshiba Mobile IO framebuffer support
+                 [*] tmiofb acceleration (NEW)
+                 <M> SMSC UFX6000/7000 USB Framebuffer support
+                 <M> Displaylink USB Framebuffer support
+                 <M> Goldfish Framebuffer 
+                 <M> Vitrual Frame Buffer support(ONLY FOR TESTING)
+                 <M> E-Ink Metronome/8track controller support
+                 <M> MSM Framebuffer support
+                 <M> E-Ink Broadsheet/Epson S1D13521 controller support
+                 <M> AUO-K190X EPD controller support
+                    <M> AUO-K1900 EPD controller support
+                    <M> AUO-K190X\1 EPD controller support
+                 [*] Simple framebuffer support 
+        [*] Esynos Video driver support 
             Console display driver support 
             <*> Framebuffer Console support
             [*]     Map the console to primary display device
@@ -48,9 +69,9 @@ For integration MangoH Red and Wave Share E-Ink Display
     Rebuild kernel image: bitbake -f linux-yocto
  
  ### 7. Rebuild rootfs filesystem and images
-
-    bitbake -c cleansstate mdm9x15-image-minimal
-    bitbake mdm9x15-image-minimal
+    
+    cd ../yocto
+    make image_bin
 
 Check new build CWE images: yocto_wp85.cwe
 
