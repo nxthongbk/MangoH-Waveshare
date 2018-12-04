@@ -70,8 +70,8 @@ For integration MangoH Red and Wave Share E-Ink Display
  
  ### 7. Rebuild rootfs filesystem and images
     
-    cd ../yocto
-    make image_bin
+    bitbake -c cleansstate mdm9x15-image-minimal
+    bitbake mdm9x15-image-minimal
 
 Check new build CWE images: yocto_wp85.cwe
 
