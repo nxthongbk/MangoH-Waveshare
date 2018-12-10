@@ -493,11 +493,35 @@ static int ourfb_spi_init(struct spi_device *spi)
 			if (!bpp)
 				bpp = 1;
 
-		} else if(strcmp(name, "ws_42")) {
+		} else if(strcmp(name, "ws_27")) {
 			if (!width)
-				width = 400;
+				width = 176;
 			if (!height)
-				height = 300;
+				height = 264;
+			if (!bpp)
+				bpp = 1;
+
+		} else if(strcmp(name, "ws_29")) {
+			if (!width)
+				width = 128;
+			if (!height)
+				height = 296;
+			if (!bpp)
+				bpp = 1;
+
+		} else if(strcmp(name, "ws_75")) {
+			if (!width)
+				width = 384;
+			if (!height)
+				height = 640;
+			if (!bpp)
+				bpp = 1;
+
+		} else if(strcmp(name, "ws_154")) {
+			if (!width)
+				width = 200;
+			if (!height)
+				height = 200;
 			if (!bpp)
 				bpp = 1;
 
