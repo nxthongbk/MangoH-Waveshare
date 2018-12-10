@@ -623,6 +623,11 @@ static int __init ourfb_init(void)
 				height = 296;
 				bpp = 1;
 
+		} else if(!strcmp(name, "ws_42")) {
+				width = 300;
+				height = 400;
+				bpp = 1;
+				
 		} else if(!strcmp(name, "ws_75")) {
 				width = 384;
 				height = 640;
