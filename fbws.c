@@ -460,15 +460,15 @@ static struct fb_ops ourfb_ops = {
 };
 
 //Config Deferred IO
-// static void ourfb_deferred_io(struct fb_info *info,
-// 				struct list_head *pagelist)
-// {
-// 	ourfb_update_display(info->par);
-// }
-// static struct fb_deferred_io ourfb_defio = {
-// 	.delay		= HZ,
-// 	.deferred_io	= ourfb_deferred_io,
-// };
+static void ourfb_deferred_io(struct fb_info *info,
+				struct list_head *pagelist)
+{
+	ourfb_update_display(info->par);
+}
+static struct fb_deferred_io ourfb_defio = {
+	.delay		= HZ,
+	.deferred_io	= ourfb_deferred_io,
+};
 
 
 /**
@@ -520,8 +520,8 @@ static int ourfb_spi_init(struct spi_device *spi)
 	info->var.transp.length = 0;
 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
 	
-	// info->fbdefio = &ourfb_defio;
-	// fb_deferred_io_init(info);
+	info->fbdefio = &ourfb_defio;
+	fb_deferred_io_init(info);
 
 	par = info->par;
 	par->info = info;
