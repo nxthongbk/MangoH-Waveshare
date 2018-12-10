@@ -54,7 +54,6 @@ const unsigned char lut_partial_update[] =
 };
 
 
-
 static struct fb_fix_screeninfo ourfb_fix ={
 	.id =		"waveshare", 
 	.type =		FB_TYPE_PACKED_PIXELS,
@@ -67,7 +66,6 @@ static struct fb_fix_screeninfo ourfb_fix ={
 };
 
 
-
 static struct fb_var_screeninfo ourfb_var = {
 	.xres =			WIDTH,
 	.yres =			HEIGHT,
@@ -78,9 +76,6 @@ static struct fb_var_screeninfo ourfb_var = {
 };
 
 
-
-
-
 static int our_write(struct ourfb_par *par, u8 data)
 {
 	u8 txbuf[2];
@@ -88,6 +83,7 @@ static int our_write(struct ourfb_par *par, u8 data)
 	return spi_write(par->spi,&txbuf[0],1);
 
 }
+
 
 static void our_write_data(struct ourfb_par *par, u8 data)
 {
@@ -103,6 +99,7 @@ static void our_write_data(struct ourfb_par *par, u8 data)
 			par->info->fix.id, data, ret);
 	}
 }
+
 
 static int our_write_data_buf(struct ourfb_par *par,
 					u8 *txbuf, int size)
@@ -126,7 +123,6 @@ static void our_write_cmd(struct ourfb_par *par, u8 data)
 	if (ret < 0)
 		pr_err("%s: write command %02x failed with status %d\n",
 			par->info->fix.id, data, ret);
-	
 }
 
 /**
@@ -348,13 +344,6 @@ static int ourfb_init_display(struct ourfb_par *par)
 */
 static void ourfb_update_display(struct ourfb_par *par)
 {
-	
-	printk("ourfb_update_display is called\n");
-
-	printk(par->info->xres);
-
-	printk("xres is called\n");
-
 	int ret = 0;
 	u8 *vmem = par->info->screen_base;
 #ifdef __LITTLE_ENDIAN
@@ -369,7 +358,7 @@ static void ourfb_update_display(struct ourfb_par *par)
  		ssbuf[i] = vmem8[i];
  	}
 
- 	set_frame_memory(par,ssbuf);
+ 	set_frame_memory(par, ssbuf);
  	display_frame(par);
 
  #endif
@@ -478,7 +467,7 @@ static struct fb_ops ourfb_ops = {
 static void ourfb_deferred_io(struct fb_info *info,
 				struct list_head *pagelist)
 {
-	ourfb_update_display(info->par,);
+	ourfb_update_display(info->par);
 }
 static struct fb_deferred_io ourfb_defio = {
 	.delay		= HZ,
@@ -502,7 +491,7 @@ static int ourfb_spi_init(struct spi_device *spi)
 			if (!height)
 				height = 250;
 			if (!bpp)
-				bpp=1;
+				bpp = 1;
 
 		} else if(strcmp(name, "ws_42")) {
 			if (!width)
@@ -510,7 +499,7 @@ static int ourfb_spi_init(struct spi_device *spi)
 			if (!height)
 				height = 300;
 			if (!bpp)
-				bpp=1;
+				bpp = 1;
 
 		} else {
 			printk("Display is not supported:\n"); }
@@ -652,6 +641,6 @@ module_exit(ourfb_exit);
 
 MODULE_ALIAS("platform:eink");
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("");
+MODULE_AUTHOR("Thong Nguyen");
 MODULE_DESCRIPTION("FB Display driver");
 MODULE_VERSION("0.1");
