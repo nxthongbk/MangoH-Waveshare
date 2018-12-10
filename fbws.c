@@ -176,11 +176,11 @@ static void our_reset(struct ourfb_par *par)
 */
 static void set_lut(struct ourfb_par *par,unsigned char* lut)
 {
-	 our_write_cmd(par,WS_WRITE_LUT_REGISTER);
+	 our_write_cmd(par, WS_WRITE_LUT_REGISTER);
 	 int i;
 	 for(i = 0;i < 30; i++)
 	 {
- 		our_write_data(par,lut[i]);
+ 		our_write_data(par, lut[i]);
 	 }
 }
 
@@ -192,23 +192,23 @@ static int int_lut(struct ourfb_par *par,unsigned char* lut)
 	
 	our_reset(par);
 
-    our_write_cmd(par,WS_DRIVER_OUTPUT_CONTROL);
-    our_write_data(par,(HEIGHT - 1) & 0xFF);
-    our_write_data(par,((HEIGHT - 1) >> 8) & 0xFF);
-    our_write_data(par,0x00);                     // GD = 0; SM = 0; TB = 0;
-    our_write_cmd(par,WS_BOOSTER_SOFT_START_CONTROL);
-    our_write_data(par,0xD7);
-    our_write_data(par,0xD6);
-    our_write_data(par,0x9D);
-    our_write_cmd(par,WS_WRITE_VCOM_REGISTER);
-    our_write_data(par,0xA8);                     // VCOM 7C
-    our_write_cmd(par,WS_SET_DUMMY_LINE_PERIOD);
-    our_write_data(par,0x1A);                     // 4 dummy lines per gate
-    our_write_cmd(par,WS_SET_GATE_TIME);
-    our_write_data(par,0x08);                     // 2us per line
-    our_write_cmd(par,WS_DATA_ENTRY_MODE_SETTING);
-    our_write_data(par,0x03);                     // X increment; Y increment
-    set_lut(par,lut);
+    our_write_cmd(par, WS_DRIVER_OUTPUT_CONTROL);
+    our_write_data(par, (height - 1) & 0xFF);
+    our_write_data(par, ((height - 1) >> 8) & 0xFF);
+    our_write_data(par, 0x00);                     // GD = 0; SM = 0; TB = 0;
+    our_write_cmd(par, WS_BOOSTER_SOFT_START_CONTROL);
+    our_write_data(par, 0xD7);
+    our_write_data(par, 0xD6);
+    our_write_data(par, 0x9D);
+    our_write_cmd(par, WS_WRITE_VCOM_REGISTER);
+    our_write_data(par, 0xA8);                     // VCOM 7C
+    our_write_cmd(par, WS_SET_DUMMY_LINE_PERIOD);
+    our_write_data(par, 0x1A);                     // 4 dummy lines per gate
+    our_write_cmd(par, WS_SET_GATE_TIME);
+    our_write_data(par, 0x08);                     // 2us per line
+    our_write_cmd(par, WS_DATA_ENTRY_MODE_SETTING);
+    our_write_data(par, 0x03);                     // X increment; Y increment
+    set_lut(par, lut);
    
     return 0;
 }
@@ -252,14 +252,14 @@ static void set_memory_pointer(struct ourfb_par *par,int x, int y)
 static void clear_frame_memory(struct ourfb_par *par,unsigned char color)
 {
 	printk("call clear_frame_memory\n");
-	set_memory_area(par,0,0,WIDTH-1,HEIGHT-1);
+	set_memory_area(par, 0, 0, width-1, height-1);
 	int j;
-	for(j = 0; j < HEIGHT ;j++)
+	for(j = 0; j < height ;j++)
 	{
 		set_memory_pointer(par,0 , j);
 		our_write_cmd(par, WS_WRITE_RAM);
 		int i;
-		for(i = 0; i < WIDTH/8 ;i++)
+		for(i = 0; i < width/8 ;i++)
 		{
 			our_write_data(par,color);			
 		}
@@ -271,19 +271,19 @@ static void clear_frame_memory(struct ourfb_par *par,unsigned char color)
 */
 static void set_frame_memory(struct ourfb_par *par,unsigned char* image_buffer)
 {
-	set_memory_area(par, 0, 0, WIDTH-1, HEIGHT-1);
+	set_memory_area(par, 0, 0, width-1, height-1);
 	
 
 	int j;
-	for(j = 0; j < HEIGHT ; j++)
+	for(j = 0; j < height ; j++)
 	{
 		set_memory_pointer(par,0 , j);
 		our_write_cmd(par, WS_WRITE_RAM);
 
 		int i;
-		for(i = 0; i < (WIDTH-1)/8 ; i++)
+		for(i = 0; i < (width-1)/8 ; i++)
 		{
-			our_write_data(par, image_buffer[i + j * (WIDTH/8)]);
+			our_write_data(par, image_buffer[i + j * (width/8)]);
 		}
 	}
 }
@@ -353,10 +353,9 @@ static void ourfb_update_display(struct ourfb_par *par)
 	printk("goto __LITTLE_ENDIAN\n");
  	int i;
 	u8 *vmem8 = (u8 *)vmem;
-	//u16 *ssbuf = par->ssbuf;
  	u8 *ssbuf = par->ssbuf;
 
- 	for (i=0; i<WIDTH*HEIGHT*BPP/8; i++)
+ 	for (i=0; i<width*height*bpp/8; i++)
  	{
  		ssbuf[i] = vmem8[i];
  	}
@@ -451,9 +450,9 @@ static ssize_t ourfb_write(struct fb_info *info, const char __user *buf,
 /*	@brief: fb operator define
 */
 static struct fb_ops ourfb_ops = {
-	.owner		= THIS_MODULE,
-	.fb_read	=fb_sys_read,
-	.fb_write	= ourfb_write,
+	.owner			= THIS_MODULE,
+	.fb_read		= fb_sys_read,
+	.fb_write		= ourfb_write,
 	.fb_fillrect	= ourfb_fillrect,
 	.fb_copyarea	= ourfb_copyarea,
 	.fb_imageblit	= ourfb_imageblit,
@@ -461,16 +460,15 @@ static struct fb_ops ourfb_ops = {
 };
 
 //Config Deferred IO
-static void ourfb_deferred_io(struct fb_info *info,
-				struct list_head *pagelist)
-{
-	ourfb_update_display(info->par);
-}
-static struct fb_deferred_io ourfb_defio = {
-	.delay		= HZ,
-	.deferred_io	= ourfb_deferred_io,
-};
-
+// static void ourfb_deferred_io(struct fb_info *info,
+// 				struct list_head *pagelist)
+// {
+// 	ourfb_update_display(info->par);
+// }
+// static struct fb_deferred_io ourfb_defio = {
+// 	.delay		= HZ,
+// 	.deferred_io	= ourfb_deferred_io,
+// };
 
 
 /**
@@ -484,7 +482,7 @@ static int ourfb_spi_init(struct spi_device *spi)
 
 	struct ourfb_platform_data *pdata = spi->dev.platform_data;
 
-	int vmem_size = WIDTH*HEIGHT*BPP/8;
+	int vmem_size = width*height*bpp/8;
 	u8 *vmem;
 	struct ourfb_par *par;
 
@@ -522,8 +520,8 @@ static int ourfb_spi_init(struct spi_device *spi)
 	info->var.transp.length = 0;
 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
 	
-	info->fbdefio = &ourfb_defio;
-	fb_deferred_io_init(info);
+	// info->fbdefio = &ourfb_defio;
+	// fb_deferred_io_init(info);
 
 	par = info->par;
 	par->info = info;
