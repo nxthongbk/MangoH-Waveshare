@@ -20,6 +20,23 @@
 
 #include "fbws.h"
 
+static char *name;
+module_param(name, charp, 0);
+MODULE_PARM_DESC(name, "Devicename (required). " \
+"name=list => list all supported devices.");
+
+static unsigned width = 0;
+module_param(width, uint, 0);
+MODULE_PARM_DESC(width, "Display width, used with the custom argument");
+
+static unsigned height = 0;
+module_param(height, uint, 0);
+MODULE_PARM_DESC(height, "Display height, used with the custom argument");
+
+static unsigned bpp = 0;
+module_param(bpp, uint, 0);
+MODULE_PARM_DESC(buswidth, "Display bit per pixel, used with the custom argument");
+
 const unsigned char lut_full_update[] =
 {
     0x22, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x11, 
@@ -39,7 +56,7 @@ const unsigned char lut_partial_update[] =
 
 
 static struct fb_fix_screeninfo ourfb_fix ={
-	.id =		"waveshare213", 
+	.id =		"waveshare", 
 	.type =		FB_TYPE_PACKED_PIXELS,
 	.visual =	FB_VISUAL_PSEUDOCOLOR,
 	.xpanstep =	0,
@@ -60,15 +77,16 @@ static struct fb_var_screeninfo ourfb_var = {
 	.nonstd	=		1,
 };
 
+
+
+
+
 static int our_write(struct ourfb_par *par, u8 data)
 {
-	// u8 *ssbuf = par->ssbuf;
- 	// ssbuf[0] = data;
- 	// return spi_write(par->spi, ssbuf, 2);
-
 	u8 txbuf[2];
 	txbuf[0] = data;
 	return spi_write(par->spi,&txbuf[0],1);
+
 }
 
 static void our_write_data(struct ourfb_par *par, u8 data)
@@ -143,37 +161,7 @@ static void our_set_addr_win(struct ourfb_par *par,
 	our_write_data(par, ye+1);
 }
 
-/*
-static void our_run_cfg_script(struct ourfb_par *par)
-{
-	printk("our_run_cfg_script is called\n");
 
-	int i = 0;
-	int end_script = 0;
-
-	do {
-		switch (our_cfg_script[i].cmd)
-		{
-		case WS_START:
-			break;
-		case WS_CMD:
-			our_write_cmd(par,
-				our_cfg_script[i].data & 0xff);
-			break;
-		case WS_DATA:
-			our_write_data(par,
-				our_cfg_script[i].data & 0xff);
-			break;
-		case WS_DELAY:
-			mdelay(our_cfg_script[i].data);
-			break;
-		case WS_END:
-			end_script = 1;
-		}
-		i++;
-	} while (!end_script);
-}
-*/
 /**
 /*	@brief: Reset display
 */
@@ -209,8 +197,8 @@ static int int_lut(struct ourfb_par *par,unsigned char* lut)
 	our_reset(par);
 
     our_write_cmd(par,WS_DRIVER_OUTPUT_CONTROL);
-    our_write_data(par,(HEIGHT - 1) & 0xFF);
-    our_write_data(par,((HEIGHT - 1) >> 8) & 0xFF);
+    our_write_data(par,(height - 1) & 0xFF);
+    our_write_data(par,((height - 1) >> 8) & 0xFF);
     our_write_data(par,0x00);                     // GD = 0; SM = 0; TB = 0;
     our_write_cmd(par,WS_BOOSTER_SOFT_START_CONTROL);
     our_write_data(par,0xD7);
@@ -268,14 +256,14 @@ static void set_memory_pointer(struct ourfb_par *par,int x, int y)
 static void clear_frame_memory(struct ourfb_par *par,unsigned char color)
 {
 	printk("call clear_frame_memory\n");
-	set_memory_area(par,0,0,WIDTH-1,HEIGHT-1);
+	set_memory_area(par, 0, 0, width-1, height-1);
 	int j;
-	for(j = 0; j < HEIGHT ;j++)
+	for(j = 0; j < height ; j++)
 	{
-		set_memory_pointer(par,0 , j);
+		set_memory_pointer(par, 0 , j);
 		our_write_cmd(par, WS_WRITE_RAM);
 		int i;
-		for(i = 0; i < WIDTH/8 ;i++)
+		for(i = 0; i < width/8 ;i++)
 		{
 			our_write_data(par,color);			
 		}
@@ -287,19 +275,19 @@ static void clear_frame_memory(struct ourfb_par *par,unsigned char color)
 */
 static void set_frame_memory(struct ourfb_par *par,unsigned char* image_buffer)
 {
-	set_memory_area(par, 0, 0, WIDTH-1, HEIGHT-1);
+	set_memory_area(par, 0, 0, width-1, height-1);
 	
 
 	int j;
-	for(j = 0; j < HEIGHT ; j++)
+	for(j = 0; j < height ; j++)
 	{
 		set_memory_pointer(par,0 , j);
 		our_write_cmd(par, WS_WRITE_RAM);
 
 		int i;
-		for(i = 0; i < (WIDTH-1)/8 ; i++)
+		for(i = 0; i < (width-1)/8 ; i++)
 		{
-			our_write_data(par, image_buffer[i + j * (WIDTH/8)]);
+			our_write_data(par, image_buffer[i + j * (width/8)]);
 		}
 	}
 }
@@ -343,7 +331,7 @@ static int ourfb_init_display(struct ourfb_par *par)
    	gpio_export(par->busy, true);
 
 
-    if(int_lut(par,lut_full_update)!=0)
+    if(int_lut(par,lut_partial_update)!=0)
 	 {
 	 	printk("Init lut error");
 	 } 
@@ -363,6 +351,10 @@ static void ourfb_update_display(struct ourfb_par *par)
 	
 	printk("ourfb_update_display is called\n");
 
+	printk(par->info->xres);
+
+	printk("xres is called\n");
+
 	int ret = 0;
 	u8 *vmem = par->info->screen_base;
 #ifdef __LITTLE_ENDIAN
@@ -372,7 +364,7 @@ static void ourfb_update_display(struct ourfb_par *par)
 	//u16 *ssbuf = par->ssbuf;
  	u8 *ssbuf = par->ssbuf;
 
- 	for (i=0; i<WIDTH*HEIGHT*BPP/8; i++)
+ 	for (i = 0; i <width*height*BPP/8; i++)
  	{
  		ssbuf[i] = vmem8[i];
  	}
@@ -381,49 +373,7 @@ static void ourfb_update_display(struct ourfb_par *par)
  	display_frame(par);
 
  #endif
-	/*
-		TODO:
-		Allow a subset of pages to be passed in
-		(for deferred I/O).  Check pages against
-		pan display settings to see if they
-		should be updated.
-	*/
-	/* For now, just write the full 40KiB on each update */
-
-	/* Set row/column data window */
- // 	printk("write command121\n");
-	// our_write_cmd(par, 0x00);
-	// our_write_cmd(par, 0x01);
-	// our_write_cmd(par, 0x02);
-	// our_write_cmd(par, 0x03);
-	// our_write_cmd(par, 0x04);
-	// our_write_cmd(par,0x05);
-
-	//printk("write command----------\n");
-	//our_write_data_buf(par, (u8 *)ssbuf,WIDTH*HEIGHT*BPP/8);
-
 	
-	
-
-	// // our_set_addr_win(par,0,0,WIDTH-1, HEIGHT-1);
-	// our_set_addr_win(par, 0, 0, WIDTH-1, HEIGHT-1);
-
-	/* Internal RAM write command */
-	//our_write_cmd(par, WS_RAMWR);
-
-	
-
-	/* Blast framebuffer to ST7735 internal display RAM */
-// #ifdef __LITTLE_ENDIAN
-// 	printk("goto bellow __LITTLE_ENDIAN");
-// 	ret = our_write_data_buf(par, (u8 *)ssbuf, WIDTH*HEIGHT*BPP/8);
-// #else
-// 	printk("goto not  __LITTLE_ENDIAN");
-// 	ret = our_write_data_buf(par, vmem, WIDTH*HEIGHT*BPP/8);
-// #endif
-// 	if (ret < 0)
-// 		pr_err("%s: spi_write failed to update display buffer\n",
-// 			par->info->fix.id);
 }
 
 
@@ -505,6 +455,7 @@ static ssize_t ourfb_write(struct fb_info *info, const char __user *buf,
 	return (err) ? err : count;
 }
 
+
 /**
 /*	@brief: fb operator define
 */
@@ -515,6 +466,7 @@ static struct fb_ops ourfb_ops = {
 	.fb_fillrect	= ourfb_fillrect,
 	.fb_copyarea	= ourfb_copyarea,
 	.fb_imageblit	= ourfb_imageblit,
+	//.fb_ioctl = ourfb_ioctl,
 
 	//For default fb operator
 	// .fb_fillrect	= cfb_fillrect,
@@ -526,17 +478,13 @@ static struct fb_ops ourfb_ops = {
 static void ourfb_deferred_io(struct fb_info *info,
 				struct list_head *pagelist)
 {
-	ourfb_update_display(info->par);
+	ourfb_update_display(info->par,);
 }
 static struct fb_deferred_io ourfb_defio = {
 	.delay		= HZ,
 	.deferred_io	= ourfb_deferred_io,
 };
 
-static void ourfb_deferred_io(struct fb_info *info,	struct list_head *pagelist)
- {
- 	ourfb_update_display(info->par);
- } 
 
 /**
 /*	@brief: Init FB SPI
@@ -547,21 +495,38 @@ static int ourfb_spi_init(struct spi_device *spi)
 	struct fb_info *info;
 	int retval = -ENOMEM;
 
+	if (name) {
+		if (!strcmp(name, "ws_213")) {
+			if (!width)
+				width = 128;
+			if (!height)
+				height = 250;
+			if (!bpp)
+				bpp=1;
+
+		} else if(strcmp(name, "ws_42")) {
+			if (!width)
+				width = 400;
+			if (!height)
+				height = 300;
+			if (!bpp)
+				bpp=1;
+
+		} else {
+			printk("Display is not supported:\n"); }
+	}
+
 	struct ourfb_platform_data *pdata = spi->dev.platform_data;
 
-	int vmem_size = WIDTH*HEIGHT*BPP/8;
+	int vmem_size = width*height*bpp/8;
 	u8 *vmem;
 	struct ourfb_par *par;
 
-	printk("start vmem:\n");
-
-	vmem = vmalloc(vmem_size);
+	vmem = vzalloc(vmem_size);
 	if (!vmem)
 		return retval;
-	
-	//vmem = vzalloc(vmem_size);
-	//if (!vmem)
-	//	return retval;
+
+	printk("start vmem successfuly:\n");
 
 	info =framebuffer_alloc(sizeof(struct ourfb_par),&spi ->dev);
 	if (!info)
@@ -576,15 +541,8 @@ static int ourfb_spi_init(struct spi_device *spi)
 	info->fix.smem_len = vmem_size;
 	info->var = ourfb_var;
 	//For color display (TBD)
-	/* Choose any packed pixel format as long as it's RGB565 */
-	info->var.red.offset = 11;
-	info->var.red.length = 5;
-	info->var.green.offset = 5;
-	info->var.green.length = 6;
-	info->var.blue.offset = 0;
-	info->var.blue.length = 5;
-	info->var.transp.offset = 0;
-	info->var.transp.length = 0;
+	
+	
 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
 	
 	info->fbdefio = &ourfb_defio;
@@ -611,11 +569,15 @@ static int ourfb_spi_init(struct spi_device *spi)
 		goto fbreg_fail;
 
 
+	printk("register FB sucessfully\n");
+
 	spi_set_drvdata(spi, info);
 
 	retval = ourfb_init_display(par);
 	if (retval < 0)
 		goto init_fail;
+
+	printk("register FB Init  sucessfully\n");
 
 	printk(KERN_INFO
 		"fb%d: %s frame buffer device,\n\tusing %d KiB of video memory\n",
@@ -650,7 +612,7 @@ static void ourfb_spi_remove(struct spi_device *spi)
 
 
 static struct spi_device_id ourfb_spi_tbl[]={
-	{"waveshare213",0},
+	{"waveshare",0},
 	{ },
 };
 
@@ -660,7 +622,7 @@ MODULE_DEVICE_TABLE(spi,ourfb_spi_tbl);
 
 static struct spi_driver ourfb_driver={
 	.driver={
-		.name 		=	"waveshare213",
+		.name 		=	"waveshare",
 		.owner 		=THIS_MODULE,
 	},
 	
@@ -690,6 +652,6 @@ module_exit(ourfb_exit);
 
 MODULE_ALIAS("platform:eink");
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Thong Nguyen");
+MODULE_AUTHOR("");
 MODULE_DESCRIPTION("FB Display driver");
 MODULE_VERSION("0.1");
