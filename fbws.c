@@ -353,7 +353,7 @@ static void ourfb_update_display(struct ourfb_par *par)
 	//u16 *ssbuf = par->ssbuf;
  	u8 *ssbuf = par->ssbuf;
 
- 	for (i = 0; i <width*height*BPP/8; i++)
+ 	for (i = 0; i < width*height*BPP/8; i++)
  	{
  		ssbuf[i] = vmem8[i];
  	}
@@ -410,7 +410,6 @@ static ssize_t ourfb_write(struct fb_info *info, const char __user *buf,
 	int err = 0;
 	unsigned long total_size;
 
-	//ourfb_update_display1(par);
 
 	if (info->state != FBINFO_STATE_RUNNING)
 		return -EPERM;
@@ -455,12 +454,6 @@ static struct fb_ops ourfb_ops = {
 	.fb_fillrect	= ourfb_fillrect,
 	.fb_copyarea	= ourfb_copyarea,
 	.fb_imageblit	= ourfb_imageblit,
-	//.fb_ioctl = ourfb_ioctl,
-
-	//For default fb operator
-	// .fb_fillrect	= cfb_fillrect,
-	// .fb_copyarea	= cfb_copyarea,
-	// .fb_imageblit	= cfb_imageblit,
 };
 
 //Config Deferred IO
@@ -486,43 +479,28 @@ static int ourfb_spi_init(struct spi_device *spi)
 
 	if (name) {
 		if (!strcmp(name, "ws_213")) {
-			if (!width)
 				width = 128;
-			if (!height)
 				height = 250;
-			if (!bpp)
 				bpp = 1;
 
 		} else if(strcmp(name, "ws_27")) {
-			if (!width)
 				width = 176;
-			if (!height)
 				height = 264;
-			if (!bpp)
 				bpp = 1;
 
 		} else if(strcmp(name, "ws_29")) {
-			if (!width)
 				width = 128;
-			if (!height)
 				height = 296;
-			if (!bpp)
 				bpp = 1;
 
 		} else if(strcmp(name, "ws_75")) {
-			if (!width)
 				width = 384;
-			if (!height)
 				height = 640;
-			if (!bpp)
 				bpp = 1;
 
 		} else if(strcmp(name, "ws_154")) {
-			if (!width)
 				width = 200;
-			if (!height)
 				height = 200;
-			if (!bpp)
 				bpp = 1;
 
 		} else {
