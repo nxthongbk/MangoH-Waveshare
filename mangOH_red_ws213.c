@@ -2,16 +2,16 @@
 #include <linux/spi/spi.h>
 #include "fb_waveshare_213.h"
 
-#define SPI_BUS 	32766
+#define SPI_BUS 		32766
 #define SPI_BUS_CS1 	1
 #define SPI_BUS_SPEED 	960000
 
-const char this_driver_name[] = "waveshare213";
+const char this_driver_name[] = "waveshare_213";
 
 static struct ws213fb_platform_data ourfb_data = {
-       .rst_gpio       = 54,
-       .dc_gpio        = 49,
-       .busy_gpio	=	61, 
+       .rst_gpio	= 	54,
+       .dc_gpio		= 	49,
+       .busy_gpio	= 	61, 
 };
 
 
@@ -32,7 +32,6 @@ static int __init add_ws213fb_device_to_bus(void)
 		return -1;
 	}
 
-	printk("spi_alloc_device\n");
 	spi_device = spi_alloc_device(spi_master);
 	if (!spi_device) {
 		put_device(&spi_master->dev);

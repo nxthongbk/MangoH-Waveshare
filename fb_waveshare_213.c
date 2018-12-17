@@ -16,12 +16,13 @@
 #include <linux/uaccess.h>
 #include <linux/rmap.h>
 #include <linux/pagemap.h>
+#include <linux/device.h>
 
 #include "fb_waveshare_213.h"
 
 #define DRVNAME		"waveshare_213"
-#define WIDTH		0
-#define HEIGHT		0
+#define WIDTH		128
+#define HEIGHT		250
 #define BPP			1
 
 #define WS_SW_RESET								0x12
@@ -43,21 +44,10 @@
 #define WS_SET_GATE_TIME                        0x3B
 
 
-static char *name;
-module_param(name, charp, 0);
-MODULE_PARM_DESC(name, "Device name.");
 
 static unsigned width = 0;
-module_param(width, uint, 0);
-MODULE_PARM_DESC(width, "Display width, used with the custom argument");
-
 static unsigned height = 0;
-module_param(height, uint, 0);
-MODULE_PARM_DESC(height, "Display height, used with the custom argument");
-
 static unsigned bpp = 0;
-module_param(bpp, uint, 0);
-MODULE_PARM_DESC(buswidth, "Display bit per pixel, used with the custom argument");
 
 
 const unsigned char lut_full_update[] =
@@ -77,8 +67,7 @@ const unsigned char lut_partial_update[] =
 };
 
 
-
-static struct fb_fix_screeninfo ws213fb_fix ={
+static struct fb_fix_screeninfo ws213fb_fix = {
 	.id =		"waveshare213", 
 	.type =		FB_TYPE_PACKED_PIXELS,
 	.visual =	FB_VISUAL_PSEUDOCOLOR,
@@ -92,12 +81,12 @@ static struct fb_fix_screeninfo ws213fb_fix ={
 
 
 static struct fb_var_screeninfo ws213fb_var = {
-	.xres =			WIDTH,
-	.yres =			HEIGHT,
-	.xres_virtual =		WIDTH,
-	.yres_virtual =		HEIGHT,
+	.xres 			=	WIDTH,
+	.yres 			=	HEIGHT,
+	.xres_virtual 	=	WIDTH,
+	.yres_virtual 	=	HEIGHT,
 	.bits_per_pixel =	BPP,
-	.nonstd	=		1,
+	.nonstd			=	1,
 };
 
 static int ws213_write(struct ws213fb_par *par, u8 data)
@@ -174,7 +163,6 @@ static void set_lut(struct ws213fb_par *par,unsigned char* lut)
 
 static int int_lut(struct ws213fb_par *par,unsigned char* lut)
 {
-	
 	ws213_reset(par);
     ws213_write_cmd(par, WS_DRIVER_OUTPUT_CONTROL);
     ws213_write_data(par, (height - 1) & 0xFF);
@@ -225,7 +213,6 @@ static void set_memory_pointer(struct ws213fb_par *par,int x, int y)
 
 static void clear_frame_memory(struct ws213fb_par *par,unsigned char color)
 {
-	printk("call clear_frame_memory\n");
 	set_memory_area(par, 0, 0, width-1, height-1);
 	int j;
 	for(j = 0; j < height ;j++)
@@ -286,7 +273,6 @@ static int ws213fb_init_display(struct ws213fb_par *par)
    	gpio_set_value(par->rst, 0);
    	gpio_export(par->rst, true);
 
-
    	gpio_direction_input(par->busy);
    	gpio_set_value(par->busy, 0);
    	gpio_export(par->busy, true);
@@ -327,8 +313,7 @@ static void ws213fb_update_display(struct ws213fb_par *par)
 
  	set_frame_memory(par,ssbuf);
  	display_frame(par);
-
- #endif
+#endif
 	
 }
 
@@ -410,6 +395,35 @@ static struct fb_ops ws213fb_ops = {
 };
 
 
+enum waveshare_devices{
+	DEV_WS_213,
+	DEV_WS_27,
+	DEV_WS_29,
+	DEV_WS_42,
+	DEV_WS_75,
+};
+
+struct waveshare_eink_device_properties{
+	unsigned int width;
+	unsigned int height;
+	unsigned int bpp;
+};
+
+static struct waveshare_eink_device_properties devices[] = 
+{
+	[DEV_WS_213] = {.width = 128, .height = 250, .bpp = 1},
+	[DEV_WS_27]  = {.width = 176, .height = 264, .bpp = 1},
+	[DEV_WS_29]  = {.width = 128, .height = 296, .bpp = 1},
+	[DEV_WS_42]  = {.width = 300, .height = 400, .bpp = 1},
+	[DEV_WS_75]  = {.width = 384, .height = 640, .bpp = 1},
+};
+
+static struct spi_device_id waveshare_eink_tbl[] = {
+	{"waveshare_213", DEV_WS_213},
+	{"waveshare_27", DEV_WS_27},
+	{ },
+};
+
 static void ws213fb_deferred_io(struct fb_info *info,
 				struct list_head *pagelist)
 {
@@ -417,28 +431,38 @@ static void ws213fb_deferred_io(struct fb_info *info,
 }
 
 static struct fb_deferred_io ws213fb_defio = {
-	.delay		= HZ/30,
+	.delay			= HZ/30,
 	.deferred_io	= ws213fb_deferred_io,
 };
-
 
 static int ws213fb_spi_probe(struct spi_device *spi)
 {
 	struct fb_info *info;
 	int retval = -ENOMEM;
 
-	struct ws213fb_platform_data *pdata = spi->dev.platform_data;
+    struct ws213fb_platform_data *pdata = spi->dev.platform_data;
+    const struct spi_device_id *spi_id = spi_get_device_id(spi);
 
-	int vmem_size = width*height*bpp/8;
+    width = devices[spi_id->driver_data].width;
+	height = devices[spi_id->driver_data].height;
+	bpp = devices[spi_id->driver_data].bpp;
+
 	u8 *vmem;
 	struct ws213fb_par *par;
-
-	
+	int vmem_size = width*height*bpp/8;
 	vmem = vmalloc(vmem_size);
+
+    if (!spi_id) {
+		dev_err(&spi->dev,
+			"device id not supported!\n");
+		return -EINVAL;
+	}
+	
 	if (!vmem)
 		return retval;
 
-	info =framebuffer_alloc(sizeof(struct ws213fb_par),&spi ->dev);
+	info =framebuffer_alloc(sizeof(struct ws213fb_par), &spi ->dev);
+
 	if (!info)
 	{
 		goto fballoc_fail;
@@ -480,8 +504,9 @@ static int ws213fb_spi_probe(struct spi_device *spi)
 
 	retval = register_framebuffer(info);
 	if (retval < 0)
-		goto fbreg_fail;
-
+		{goto fbreg_fail;
+		 printk("framebuffer failed");
+        }
 
 	spi_set_drvdata(spi, info);
 
@@ -489,10 +514,8 @@ static int ws213fb_spi_probe(struct spi_device *spi)
 	if (retval < 0)
 		goto init_fail;
 
-	// dev_dbg("fb%d: %s frame buffer device,\n\tusing %d KiB of video memory\n",
-	// 	info->node, info->fix.id, vmem_size);
-
-	// dev_dbg("fb is created");
+	dev_dbg(spi, "fb%d: %s frame buffer device,\n\tusing %d KiB of video memory\n",
+		info->node, info->fix.id, vmem_size);
 
 	return 0;
 
@@ -519,52 +542,20 @@ static void ws213fb_spi_remove(struct spi_device *spi)
 }
 
 
-enum waveshare_devices{
-	DEV_WS_213,
-	DEV_WS_27,
-};
-
-struct waveshare_eink_device_properties{
-	unsigned int width;
-	unsigned int height;
-	unsigned int bpp;
-};
-
-static struct waveshare_eink_device_properties devices[] = 
-{
-	[DEV_WS_213] = {.width = 128, .height =250, .bpp = 1},
-	[DEV_WS_27]  = {.width =176, .height = 264, .bpp =1},
-};
-
-static struct spi_device_id ws213fb_spi_tbl[]={
-	{"waveshare_213",(kernel_ulong_t)&devices[DEV_WS_213]},
-	{"waveshare_27",(kernel_ulong_t)&devices[DEV_WS_27]},
-	{ },
-};
-
-
-MODULE_DEVICE_TABLE(spi,ws213fb_spi_tbl);
+MODULE_DEVICE_TABLE(spi, waveshare_eink_tbl);
 
 
 static struct spi_driver ws213fb_driver={
 	.driver={
-		.name 		=	"waveshare_fb_spi",
-		.owner 		=THIS_MODULE,
+		.name 		=	"waveshare_213",
+		.owner 		=	THIS_MODULE,
 	},
 	
-	.id_table	=	ws213fb_spi_tbl,
+	.id_table	=	waveshare_eink_tbl,
 	.probe		=	ws213fb_spi_probe,
 	.remove 	=	ws213fb_spi_remove, 
 };
 
-
-
-
-static struct spi_device_id waveshare_eink_tbl[] = {
-	{"waveshare_213",(kernel_ulong_t)&devices[DEV_WS_213] },
-	{"waveshare_27",(kernel_ulong_t)&devices[DEV_WS_27]},
-	{ },
-};
 
 static int __init ws213fb_init(void)
 {
@@ -573,7 +564,6 @@ static int __init ws213fb_init(void)
 
 static void __exit ws213fb_exit(void)
 {
-	printk("remove fb driver\n");
 	spi_unregister_driver(&ws213fb_driver);
 }
 
