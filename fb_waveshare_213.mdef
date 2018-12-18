@@ -1,0 +1,13 @@
+sources:
+{
+    fb_waveshare_213.c
+}
+
+cflags:
+{
+//    -DDEBUG
+}
+
+params:
+{
+}
