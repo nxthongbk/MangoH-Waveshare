@@ -2,80 +2,66 @@
 #include <linux/spi/spi.h>
 #include "fb_waveshare_213.h"
 
-#define SPI_BUS 		32766
-#define SPI_BUS_CS1 	1
-#define SPI_BUS_SPEED 	12000000
+#define SPI_BUS		32766
+#define SPI_BUS_CS1	1
+#define SPI_BUS_SPEED	12000000
 
-const char this_driver_name[] = "waveshare_213";
+const char eink_device_name[] = "waveshare_213";
+static struct spi_device *eink_device;
+
+#if defined(CONFIG_ARCH_MSM9615)
+#define CF3_GPIO22	(49)
+#define CF3_GPIO23	(54)
+#define CF3_GPIO24	(61)
+#elif defined(CONFIG_ARCH_MDM9607)
+#define CF3_GPIO22	 (9)
+#define CF3_GPIO23	(10)
+#define CF3_GPIO24	(11)
+#endif
 
 static struct ws213fb_platform_data ourfb_data = {
-       .rst_gpio    = 54,
-       .dc_gpio     = 49,
-       .busy_gpio	= 61, 
+	.rst_gpio	= CF3_GPIO23,
+	.dc_gpio	= CF3_GPIO22,
+	.busy_gpio	= CF3_GPIO24,
 };
-
 
 static int __init add_ws213fb_device_to_bus(void)
 {
 	struct spi_master *spi_master;
-	struct spi_device *spi_device;
-	struct device *pdev;
-	char buff[64];
 	int status = 0;
-
 
 	spi_master = spi_busnum_to_master(SPI_BUS);
 	if (!spi_master) {
 		printk(KERN_ALERT "spi_busnum_to_master(%d) returned NULL\n",
 			SPI_BUS);
-		printk(KERN_ALERT "Missing modprobe omap2_mcspi?\n");
 		return -1;
 	}
 
-	
-	spi_device = spi_alloc_device(spi_master);
-	if (!spi_device) {
+	eink_device = spi_alloc_device(spi_master);
+	if (!eink_device) {
 		put_device(&spi_master->dev);
 		printk(KERN_ALERT "spi_alloc_device() failed\n");
-		return -1;
+		status = -1;
+		goto put_master;
 	}
 
+	eink_device->chip_select = SPI_BUS_CS1;
+	eink_device->max_speed_hz = SPI_BUS_SPEED;
+	eink_device->mode = SPI_MODE_3;
+	eink_device->bits_per_word = 8;
+	eink_device->irq = -1;
+	eink_device->dev.platform_data = &ourfb_data;
+	eink_device->controller_state = NULL;
+	eink_device->controller_data = NULL;
+	strlcpy(eink_device->modalias, eink_device_name, SPI_NAME_SIZE);
 
-	snprintf(buff, sizeof(buff), "%s.%u", dev_name(&spi_device->master->dev),
-			spi_device->chip_select);
-
-	pdev = bus_find_device_by_name(spi_device->dev.bus, NULL, buff);
-
-
- 	if (pdev) {
-		spi_dev_put(spi_device);
-		
-		if (pdev->driver && pdev->driver->name && 
-				strcmp(this_driver_name, pdev->driver->name)) {
-				printk(KERN_ALERT 
-				"Driver [%s] already registered for %s\n",
-				pdev->driver->name, buff);
-			status = -1;
-		} 
-	} else {
-		spi_device->dev.platform_data = &ourfb_data;
-		spi_device->max_speed_hz = SPI_BUS_SPEED;
-		spi_device->mode = SPI_MODE_0;
-		spi_device->bits_per_word = 8;
-		spi_device->irq = -1;
-
-		spi_device->controller_state = NULL;
-		spi_device->controller_data = NULL;
-		strlcpy(spi_device->modalias, this_driver_name, SPI_NAME_SIZE);
-		status = spi_add_device(spi_device);
-		
-		if (status < 0) {	
-			spi_dev_put(spi_device);
-			printk(KERN_ALERT "spi_add_device() failed: %d\n", 
-				status);		
-		}				
+	status = spi_add_device(eink_device);
+	if (status < 0) {
+		spi_dev_put(eink_device);
+		printk(KERN_ALERT "spi_add_device() failed: %d\n", status);
 	}
 
+put_master:
 	put_device(&spi_master->dev);
 
 	return status;
@@ -84,13 +70,11 @@ module_init(add_ws213fb_device_to_bus);
 
 static void __exit exit_ws213fb_device(void)
 {
-
+	spi_unregister_device(eink_device);
 }
 module_exit(exit_ws213fb_device);
 
 MODULE_AUTHOR("Neil Greatorex");
-MODULE_DESCRIPTION("Bind SPI to fb");
+MODULE_DESCRIPTION("Bind device driver to SPI ws213 e-ink display");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("0.1");
-
-
