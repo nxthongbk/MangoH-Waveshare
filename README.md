@@ -1,6 +1,6 @@
-# MangoH-Waveshare
-For integration MangoH Red and Wave Share E-Ink Display
+# mangOH Waveshare E-Ink Linux Framebuffer driver
 
+For integration mangOH Red and Waveshare E-Ink Display
 
 ### 1. Download Legato Distribution Source Package from sierra wireless website:
     Yocto Source (Around 4 GB)
