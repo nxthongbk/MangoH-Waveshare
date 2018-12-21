@@ -4,7 +4,7 @@
 
 #define SPI_BUS		32766
 #define SPI_BUS_CS1	1
-#define SPI_BUS_SPEED	12000000
+#define SPI_BUS_SPEED	6000000
 
 const char eink_device_name[] = "waveshare_213";
 static struct spi_device *eink_device;

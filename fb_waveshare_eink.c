@@ -20,23 +20,23 @@
 
 #include "fb_waveshare_eink.h"
 
-#define WS_SW_RESET				0x12
-#define WS_DISPLAY_UPDATE_CONTROL_1		0x21
-#define WS_DISPLAY_UPDATE_CONTROL_2		0x22
-#define WS_WRITE_RAM				0x24
-#define WS_WRITE_VCOM_REGISTER			0x2C
-#define WS_WRITE_LUT_REGISTER			0x32
+#define WS_SW_RESET								0x12
+#define WS_DISPLAY_UPDATE_CONTROL_1				0x21
+#define WS_DISPLAY_UPDATE_CONTROL_2				0x22
+#define WS_WRITE_RAM							0x24
+#define WS_WRITE_VCOM_REGISTER					0x2C
+#define WS_WRITE_LUT_REGISTER					0x32
 #define WS_SET_RAM_X_ADDRESS_START_END_POSITION	0x44
 #define WS_SET_RAM_Y_ADDRESS_START_END_POSITION	0x45
-#define WS_SET_RAM_X_ADDRESS_COUNTER		0x4E
-#define WS_SET_RAM_Y_ADDRESS_COUNTER		0x4F
-#define WS_MASTER_ACTIVATION			0x20
-#define WS_TERMINATE_FRAME_READ_WRITE		0xFF
-#define WS_DRIVER_OUTPUT_CONTROL		0x01
-#define WS_BOOSTER_SOFT_START_CONTROL		0x0C
-#define WS_DATA_ENTRY_MODE_SETTING		0x11
-#define WS_SET_DUMMY_LINE_PERIOD		0x3A
-#define WS_SET_GATE_TIME			0x3B
+#define WS_SET_RAM_X_ADDRESS_COUNTER			0x4E
+#define WS_SET_RAM_Y_ADDRESS_COUNTER			0x4F
+#define WS_MASTER_ACTIVATION					0x20
+#define WS_TERMINATE_FRAME_READ_WRITE			0xFF
+#define WS_DRIVER_OUTPUT_CONTROL				0x01
+#define WS_BOOSTER_SOFT_START_CONTROL			0x0C
+#define WS_DATA_ENTRY_MODE_SETTING				0x11
+#define WS_SET_DUMMY_LINE_PERIOD				0x3A
+#define WS_SET_GATE_TIME						0x3B
 
 static unsigned width = 0;
 static unsigned height = 0;
@@ -119,7 +119,8 @@ static void ws_eink_reset(struct ws_eink_fb_par *par)
 	mdelay(200);
 }
 
-static void set_lut(struct ws_eink_fb_par *par, const u8 *lut, size_t lut_size)
+static void set_lut(struct ws_eink_fb_par *par, const u8 *lut,
+					 size_t lut_size)
 {
 	int ret;
 	ws_eink_write_cmd(par, WS_WRITE_LUT_REGISTER);
@@ -129,7 +130,8 @@ static void set_lut(struct ws_eink_fb_par *par, const u8 *lut, size_t lut_size)
 			ret);
 }
 
-static void int_lut(struct ws_eink_fb_par *par, const u8 *lut, size_t lut_size)
+static void int_lut(struct ws_eink_fb_par *par, const u8 *lut,
+					 size_t lut_size)
 {
 	ws_eink_reset(par);
 	ws_eink_write_cmd(par, WS_DRIVER_OUTPUT_CONTROL);
@@ -255,13 +257,10 @@ static void ws_eink_init_display(struct ws_eink_fb_par *par)
 static void ws_eink_update_display(struct ws_eink_fb_par *par)
 {
 	u8 *vmem = par->info->screen_base;
-
-#ifdef __LITTLE_ENDIAN
 	u8 *ssbuf = par->ssbuf;
 	memcpy(&ssbuf, &vmem, sizeof(vmem));
 	set_frame_memory(par, ssbuf);
 	display_frame(par);
-#endif
 }
 
 void ws_eink_fb_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
@@ -452,12 +451,10 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	par->dc		= pdata->dc_gpio;
 	par->busy	= pdata->busy_gpio;
 
-#ifdef __LITTLE_ENDIAN
 	vmem = vzalloc(vmem_size);
 	if (!vmem)
 		return retval;
 	par->ssbuf = vmem;
-#endif
 
 	retval = register_framebuffer(info);
 	if (retval < 0) {
